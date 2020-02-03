@@ -12,11 +12,20 @@ class Map:
         self.States = self.Mapper.getObservedStates()
 
     def getObservablefromState(self, state):
-        if state in self.States:
-            return self.States[state]
+        #handles if orientation is available or not
+        if len(state) == 1:
+            first = [x for x in self.States if x[0] == state][0][0] #very ugly I know
         else:
-            return  [{"pitch": 0, "id": " ", "direction": " ", "azimuth": 0, "x": 0, "roll": 0, "y": 0, "z": 0, "tesla": 0}]
-    
+            if state in self.States:
+                #currently returns a list of dicts, in case there are more than one reading at each landmark
+                #will need to figure out how to integrate that. Right now just the first reading is passed
+                first = self.States[state][0]
+            else:
+                first = [{"pitch": 0, "id": " ", "direction": " ", "azimuth": 0, "x": 0, "roll": 0, "y": 0, "z": 0, "tesla": 0}][0]
+        #returns the valuable observable data
+        return [first['x'], first['y'], first['z']]
+
+        
     def getStates(self):
         return self.States
 

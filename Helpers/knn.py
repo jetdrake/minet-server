@@ -8,7 +8,8 @@ def dist(a, b):
 def average(pointList):
     totalx = 0
     totaly = 0
-    for point in pointList:
+    #ignores orientation
+    for point in [x[0] for x in pointList]:
         totalx += point[0]
         totaly += point[1]
     return (totalx/len(pointList), totaly/len(pointList))
