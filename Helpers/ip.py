@@ -38,6 +38,19 @@ def getIPv4():
 
     return ipv4list[0]
 
+def getIPv4Linux():
+    data = con.check_output("ifconfig", shell=True).decode()
+    this = data.split('inet')
+    ip = this[1].split(' ')[1]
+    #print(ip)
+
+    #set ip in the db
+    #print(ip, useIP)
+    ref = db.reference('/')
+    ref.set({"ip":ip})
+
+    return ip
+
 def printIPv6():
     print(getIPv6()) 
 
@@ -61,4 +74,4 @@ def setDBIP(ip):
         ref.set({"ip":useIP})
 
 if __name__ == '__main__':
-    setDBIP('ipv4')
+    getIPv4Linux()

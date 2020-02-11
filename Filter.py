@@ -43,7 +43,7 @@ def getObservableFromNearestLandmark(x):
             particle[0], particle[1], max(particle[2], 1), shape=(img_size, img_size)
         )
         y[i, rr, cc] = 1
-       ''' 
+       '''
        #ignoreing heading for now
        state = knn.averagek((particle[0],particle[1]), landmarks, 1)
        observable = magMap.getObservablefromState(getRawState(state))
@@ -188,7 +188,6 @@ def example_filter():
         '''
         # draw individual particles
         for particle in pf.original_particles:
-
             xa, ya, sa, _, _ = particle
             sa = np.clip(sa, 1, 100)
             cv2.circle(
@@ -218,7 +217,6 @@ def example_filter():
             1,
             lineType=cv2.LINE_AA,
         )
-
         cv2.line(
             color,
             (int(y_hat * scale_factor), int(x_hat * scale_factor)),
