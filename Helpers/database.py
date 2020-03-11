@@ -39,11 +39,12 @@ class db:
             print(u'Missing data')
 
     #gets collection and writes it to a file
-    def GetCollectionAndWriteDocumentsToFile(self, collection, limit, fileName):
+    def GetCollectionAndWriteDocumentsToFile(self, collection, limit):
         docs = self.getCollection(collection, limit)
-        local = open(fileName, 'w')
-        local.write(json.dumps(docs))
-        local.close()
+        if len(docs) > 0:
+            local = open('Data/'+collection+'.json', 'w')
+            local.write(json.dumps(docs))
+            local.close()
 
     #if getCollection has already been used, there is no need to read from db again
     def writeDocumentsToFile(self, fileName):

@@ -23,14 +23,16 @@ sm = StateManager.StateManager()
 def getObservableFromNearestLandmark(x):
     y = np.zeros((x.shape[0], 3))
     for i, particle in enumerate(x):
-       #ignoreing heading for now
-       observable = sm.getObservableFromNearestLandmark((particle[0],particle[1]))
+       observable = sm.getObservableFromNearestLandmark((particle[0],particle[1]), particle[2])
        #observable will be a list with the magData[x,y,z]
        y[i] = observable
     return y
 
+def getDirection():
+    return ['E' for i in range(101)]
+
 # names (this is just for reference for the moment!)
-columns = ["x", "y", "radius", "dx", "dy"]
+columns = ["x", "y", "orientation", "dx", "dy"]
 
 # prior sampling function for each variable
 # (assumes x and y are coordinates in the range 0-img_size)
@@ -47,7 +49,7 @@ prior_fn = independent_sample(
 )
 
 # names (this is just for reference for the moment!)
-columns = ["x", "y", "orientation", "dx", "dy"]
+columns = ["x", "y", "radius", "dx", "dy"]
 
 # very simple linear dynamics: x += dx
 def velocity(x):
@@ -107,7 +109,7 @@ class MapFilter():
             self.initWindow()
             self.drawParticles()
             self.drawLandmarks()
-            self.drawMeanData()
+            #self.drawMeanData()
             self.drawMostPopularLandmark()
             if self.fakeData is not None:
                 self.drawFakeData()
@@ -120,6 +122,12 @@ class MapFilter():
 
     def setFakeData(self, fakeData):
         self.fakeData = fakeData
+
+    def getMeanState(self):
+        return self.pf.mean_state
+
+    def getMostPopularState(self):
+        return self.manager.getMostPopularState()
 
     def initWindow(self, img_size=48, scale_factor=20):
         # create window
@@ -157,9 +165,10 @@ class MapFilter():
 
     def drawLandmarks(self):
         for landmark in self.manager.getLandmarks():
+            coord = landmark[0]
             cv2.circle(
                 self.color,
-                (int(landmark[0]),int(landmark[1])),
+                (int(coord[0]),int(coord[1])),
                 10,
                 (0,255,255),
                 1
@@ -168,21 +177,27 @@ class MapFilter():
     def drawMeanData(self):
         #highlight true data
         mean_state = self.pf.mean_state
+        try:
+            x = mean_state[0]
+            y = mean_state[1]
 
-        cv2.circle(
-            self.color,
-            (int(mean_state[0]), int(mean_state[1])), #needs to get the nearest observable value
-            35,
-            (255,0,255),
-            1
-        )
+            cv2.circle(
+                self.color,
+                (int(mean_state), int(mean_state)), #needs to get the nearest observable value
+                35,
+                (255,0,255),
+                1
+            )   
+        except :
+            print("MeanData not valid")
+        
 
     def drawMostPopularLandmark(self):
         landmark = self.manager.getMostPopularLandmark()[0]
-
+        coord = landmark[0]
         cv2.circle(
             self.color,
-            (int(landmark[0]), int(landmark[1])), #needs to get the nearest observable value
+            (int(coord[0]), int(coord[1])), #needs to get the nearest observable value
             15,
             (122,0,0),
             1

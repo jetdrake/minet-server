@@ -1,25 +1,6 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
-
-# Copyright (c) 2013 Roger Light <roger@atchoo.org>
-#
-# All rights reserved. This program and the accompanying materials
-# are made available under the terms of the Eclipse Distribution License v1.0
-# which accompanies this distribution.
-#
-# The Eclipse Distribution License is available at
-#   http://www.eclipse.org/org/documents/edl-v10.php.
-#
-# Contributors:
-#    Roger Light - initial implementation
-
-# This example shows how you can use the MQTT client in a class.
-
-#import context  # Ensures paho is in PYTHONPATH
 import paho.mqtt.client as mqtt
 import json
 from Helpers import ip
-#import classifier
 from Models import MapFilter
 import numpy as np
 
@@ -58,12 +39,17 @@ class Localize(mqtt.Client):
             msg = msg.payload.decode('UTF-8')
             point = json.loads(msg)
             #print(point)
+            #pose = [point['direction'], point['stepId']]
             realdata = [float(point['x']), float(point['y']), float(point['z'])]
             if realdata is not None:
-                self.pf.update(np.array([x/100 for x in realdata], dtype=float))
+                self.pf.update(np.array(realdata, dtype=float))
+                self.publish("result", self.pf.getMostPopularState())
         except Exception as e:
-            print(e)
+            print('error:',e)
         #print(msg.topic+" "+str(msg.qos)+" "+str(msg.payload))
+
+    def on_publish(self, mqttc, obj, mid):
+        print("mid: "+str(mid))
 
     def run(self):
         ipaddr = ip.getIPv4Linux()

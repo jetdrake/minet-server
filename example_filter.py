@@ -16,6 +16,7 @@ coord = example_filter.manager.getInitialStates()[0]
 x = coord[0]
 y = coord[1]
 
+
 scale_factor = 20
 
 for i in range(1000):
