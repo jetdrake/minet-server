@@ -4,6 +4,7 @@ from Helpers import ip
 from Models import MapFilter
 import numpy as np
 
+
 '''
 rr = classifier.classifier()
     def on_message(self, mqttc, obj, msg):
@@ -33,20 +34,30 @@ class Localize(mqtt.Client):
 
     def on_connect(self, mqttc, obj, flags, rc):
         print("rc: "+str(rc))
+        
 
     def on_message(self, mqttc, obj, msg):
         try:
-            msg = msg.payload.decode('UTF-8')
-            point = json.loads(msg)
-            #print(point)
-            #pose = [point['direction'], point['stepId']]
-            realdata = [float(point['x']), float(point['y']), float(point['z'])]
-            if realdata is not None:
-                self.pf.update(np.array(realdata, dtype=float))
-                self.publish("result", self.pf.getMostPopularState())
+            print(msg.topic, str(msg.qos), str(msg.payload))
+            if msg.topic == "realtime":
+                msg = msg.payload.decode('UTF-8')
+                point = json.loads(msg)
+                #print(point)
+                pose = point['direction']
+                realdata = [float(point['x']), float(point['y']), float(point['z'])]
+                if realdata is not None:
+                    self.pf.update(np.array(realdata, dtype=float), pose)
+                    state = self.pf.getMostPopularState()
+                    print(state)
+                    self.publish("result", str(state[0]))
+            elif msg.topic == "connect":
+                mp = self.pf.getMapForPublish()
+                mp = json.dumps(mp)
+                self.publish("map", str(mp))
+                print(mp)
         except Exception as e:
             print('error:',e)
-        #print(msg.topic+" "+str(msg.qos)+" "+str(msg.payload))
+        
 
     def on_publish(self, mqttc, obj, mid):
         print("mid: "+str(mid))
@@ -56,6 +67,7 @@ class Localize(mqtt.Client):
         # rr.getAccuracy()
         self.connect(ipaddr, 1883, 60)
         self.subscribe("realtime", 0)
+        self.subscribe("connect", 0)
 
         rc = 0
         while rc == 0:

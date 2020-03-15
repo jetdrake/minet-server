@@ -177,6 +177,12 @@ class mapper:
     def directionMapper(self, point):
         self.point = point
         direction = str(point['meta']['direction'])
+        
+        movement = self.directionToMovement(direction)
+
+        self.buildObservedStates(movement)
+
+    def directionToMovement(self, direction):
         movement = [0,0]
         if('N' in direction):
             movement[1]+=1
@@ -186,6 +192,5 @@ class mapper:
             movement[1]-=1
         if('W' in direction):
             movement[0]-=1
-
-        self.buildObservedStates(movement)
+        return movement
     

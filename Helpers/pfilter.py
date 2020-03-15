@@ -183,6 +183,8 @@ class ParticleFilter(object):
         
         """
         self.column_names = column_names
+        self.pose = None
+        self.movement = None
         self.prior_fn = prior_fn
         self.n_particles = n_particles
         self.init_filter()
@@ -230,10 +232,10 @@ class ParticleFilter(object):
         if control_fn is not None:
             self.particles = self.noise_fn(control_fn(self.particles))
         else:
-            self.particles = self.noise_fn(self.dynamics_fn(self.particles))
+            self.particles = self.noise_fn(self.dynamics_fn(self.particles, self.movement))
 
         # hypothesise observations
-        self.hypotheses = self.observe_fn(self.particles)
+        self.hypotheses = self.observe_fn(self.particles, self.pose)
 
         if observed is not None:
             # compute similarity to observations
@@ -294,4 +296,10 @@ class ParticleFilter(object):
         )
         self.resampled_particles = random_mask
         self.init_filter(mask=random_mask)
+
+    def setPose(self, pose):
+        self.pose = pose
+
+    def setMovement(self, movement):
+        self.movement = movement
 

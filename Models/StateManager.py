@@ -16,6 +16,7 @@ class StateManager:
     landmarkStates = defaultdict(list)
     #scores the landmarks most often used
     landmarkPopularity = defaultdict(int)
+    popularLandmark = None
     #used to setup the landmarks for the size of the image
     scale = None
 
@@ -31,8 +32,22 @@ class StateManager:
         # gets the unscaled state
             return self.landmarkStates[landmark][0]
 
+    def getMovementFromDirection(self, direction):
+        movement = self.Mapper.directionToMovement(direction)
+        scaler = self.scale * 2
+        x_offset = self.scale / 2
+        y_offset =  x_offset * 5
+
+        movement[0] = movement[0] * scaler + x_offset
+        movement[1] = movement[1] * scaler + y_offset
+
+        return movement
+
     def getObservableFromNearestLandmark(self, landmark, direction=None):
-        nearestLandmark = knn.averagek(landmark, self.landmarks, 1)
+        #handle direction: needs to be able to sort by contains (direction) - limit landmarks maybe
+        directedLandmarks = [x for x in self.landmarks if direction in x[1]]
+        
+        nearestLandmark = knn.averagek(landmark, directedLandmarks if (directedLandmarks is not None and directedLandmarks != []) else self.landmarks, 1)
         self.landmarkPopularity[nearestLandmark] += 1
         state = self.getStatesFromLandmark(nearestLandmark)
         observable = self.getObservablefromState(state)
@@ -40,13 +55,12 @@ class StateManager:
 
     def getObservablefromState(self, state):
         #handles if orientation is available or not
-        if len(state) == 1:
-            first = [self.States[x] for x in self.States if x == state][0] #very ugly I know
-        else:
-            
-            #currently returns a list of dicts, in case there are more than one reading at each landmark
-            #will need to figure out how to integrate that. Right now just the first reading is passed
-            first = [self.States[x] for x in self.States if x == state][0][0]
+        default = [{'x':0.0, 'y': 0.0, 'z': 0.0}]
+
+        #first = [self.States[x] for x in self.States if x == state]
+        first = self.States.get(state, default)
+        first = first[0]
+
         #returns the valuable observable data
         return [first['x'], first['y'], first['z']]
 
@@ -67,20 +81,27 @@ class StateManager:
             self.landmarkStates[landmark].append(state)
 
     def getMostPopularLandmark(self):
+        return self.popularLandmark
+
+    def setMostPopularLandmark(self):
         sorted_dict = sorted(self.landmarkPopularity.items(), key=operator.itemgetter(1))
         sorted_dict.reverse()
+        landmark = sorted_dict[0][0]
+        self.popularLandmark = landmark
         self.landmarkPopularity.clear()
-        return sorted_dict[0]
 
-    def getMostPopularState(self):
-        landmark = self.getMostPopularLandmark()
-        return self.getStatesFromLandmark(landmark)
+    def getPopularState(self):
+        return self.getStatesFromLandmark(self.popularLandmark)
 
     def getStates(self):
         return self.States
 
     def getMap(self):
         return self.Map
+
+    def getMapForPublish(self):
+        mp = set([x[0] for x in self.States])
+        return list(mp)
 
     def getLandmarks(self):
         return self.landmarks

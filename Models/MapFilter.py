@@ -20,10 +20,10 @@ from Helpers import knn
 sm = StateManager.StateManager()
 
 # actually the observe function
-def getObservableFromNearestLandmark(x):
+def getObservableFromNearestLandmark(x, pose):
     y = np.zeros((x.shape[0], 3))
     for i, particle in enumerate(x):
-       observable = sm.getObservableFromNearestLandmark((particle[0],particle[1]), particle[2])
+       observable = sm.getObservableFromNearestLandmark((particle[0],particle[1]), pose)
        #observable will be a list with the magData[x,y,z]
        y[i] = observable
     return y
@@ -54,6 +54,7 @@ columns = ["x", "y", "radius", "dx", "dy"]
 # very simple linear dynamics: x += dx
 def velocity(x):
     dt = 1.0
+
     xp = (
         x
         @ np.array(
@@ -68,6 +69,15 @@ def velocity(x):
     )
 
     return xp
+
+#direction is [x,y]
+def directedMotionModel(x, movement):
+
+    x[0] = x[0] + movement[0]
+    x[1] = x[1] + movement[1]
+
+    return x
+
 
 def squared_errorDebug(x, y, sigma=1):
     # RBF kernel
@@ -87,18 +97,21 @@ class MapFilter():
             prior_fn=prior_fn,
             observe_fn=getObservableFromNearestLandmark,
             n_particles=100,
-            dynamics_fn=velocity,
+            dynamics_fn=directedMotionModel,
             noise_fn=lambda x: x,
             weight_fn=lambda x, y: squared_errorDebug(x, y, sigma=1),
             resample_proportion=0.2,
             column_names=columns,
         )
 
-    def update(self, realData, v=True):
+    def update(self, realData, pose, v=True):
 
         # generate fake data
         self.realData = realData
+        self.pf.setPose(pose)
+        self.pf.setMovement(self.manager.getMovementFromDirection(pose))
         self.pf.update(realData)
+        self.manager.setMostPopularLandmark()
 
         # x_hat, y_hat, s_hat, dx_hat, dy_hat = pf.mean_state
 
@@ -123,11 +136,14 @@ class MapFilter():
     def setFakeData(self, fakeData):
         self.fakeData = fakeData
 
+    def getMapForPublish(self):
+        return self.manager.getMapForPublish()
+
     def getMeanState(self):
         return self.pf.mean_state
 
     def getMostPopularState(self):
-        return self.manager.getMostPopularState()
+        return self.manager.getPopularState()
 
     def initWindow(self, img_size=48, scale_factor=20):
         # create window
@@ -193,7 +209,7 @@ class MapFilter():
         
 
     def drawMostPopularLandmark(self):
-        landmark = self.manager.getMostPopularLandmark()[0]
+        landmark = self.manager.getMostPopularLandmark()
         coord = landmark[0]
         cv2.circle(
             self.color,
@@ -211,7 +227,6 @@ class MapFilter():
             (255,0,255),
             1
         )
-        
 
     def quit(self):
         cv2.destroyAllWindows()
