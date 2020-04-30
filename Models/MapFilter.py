@@ -17,7 +17,7 @@ import cv2
 from Models import StateManager
 from Helpers import knn
 
-sm = StateManager.StateManager()
+sm = StateManager.StateManager(use=False)
 
 # actually the observe function
 def getObservableFromNearestLandmark(x, pose):
@@ -52,7 +52,7 @@ prior_fn = independent_sample(
 columns = ["x", "y", "radius", "dx", "dy"]
 
 # very simple linear dynamics: x += dx
-def velocity(x):
+def velocity(x, movement):
     dt = 1.0
 
     xp = (
@@ -88,16 +88,18 @@ class MapFilter():
 
     fakeData = None
 
-    def __init__(self):
+    def __init__(self, useMap):
         #holds all of the magnetic fingerprint data
-        self.manager = sm
+        self.manager = StateManager.StateManager(useMap)
+        global sm
+        sm = self.manager
 
         # create the filter
         self.pf = ParticleFilter(
             prior_fn=prior_fn,
             observe_fn=getObservableFromNearestLandmark,
             n_particles=100,
-            dynamics_fn=directedMotionModel,
+            dynamics_fn=velocity,
             noise_fn=lambda x: x,
             weight_fn=lambda x, y: squared_errorDebug(x, y, sigma=1),
             resample_proportion=0.2,

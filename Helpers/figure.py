@@ -6,5 +6,5 @@ from collections import defaultdict
 import seaborn as sb
 
 def generateHeatMap(map):
-    sb.heatmap(map)
+    g = sb.heatmap(map, vmin=0)
     plt.show()

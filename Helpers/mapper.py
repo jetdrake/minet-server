@@ -1,5 +1,5 @@
 import numpy as np
-import json
+import json, math
 from collections import defaultdict
 
 class mapper:
@@ -84,7 +84,7 @@ class mapper:
 
     def getDataFromJSON(self, link):
         try:
-            f = open('Data/'+link, 'r')
+            f = open('Data/'+link+'.json', 'r')
             self.data = json.loads(f.read())
             f.close()
         except:
@@ -92,8 +92,11 @@ class mapper:
 
 # Calls directionMapper, which creates the map and assigns the points
     def buildMapFromData(self):
+        currentId = self.data[0]['meta']['stepId']
         for point in self.data:
+            if point['meta']['stepId'] != currentId:
                 self.directionMapper(point)
+                currentId = point['meta']['stepId']
         self.normalizeStates()
         self.Map = self.buildMapFromStates()
 
@@ -137,14 +140,23 @@ class mapper:
                 if pair in coords:
                     if figure is True:
                         observed = [self.ObservedStates[x] for x in self.ObservedStates.keys() if x[0] == pair][0][0]
-                        a[i][j] = observed['x']**2 + observed['y']**2 + observed['z']**2
+                        a[i][j] = math.sqrt(observed['x']**2 + observed['y']**2 + observed['z']**2)
                     else:
                         a[i][j] = 1
                 else:
                     a[i][j] = 0
                 
         return a
-                
+
+    def getMeanAndStandardDeviation(self):
+        val = []
+        for observed in self.ObservedStates.values():
+            val.append(math.sqrt(observed[0]['x']**2 + observed[0]['y']**2 + observed[0]['z']**2))
+        mean = np.mean(val)
+        std = np.std(val)
+        minT = np.min(val)
+        maxT = np.max(val)
+        return mean, std, minT, maxT
 
     def getMapSizeFromObservedStates(self):
         states = [x[0] for x in self.ObservedStates.keys()]

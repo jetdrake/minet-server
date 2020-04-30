@@ -63,6 +63,8 @@ def setDBIP(ip):
         useIP = getIPv4()
     elif ip == 'ipv6':
         useIP = getIPv6()
+    elif ip == 'linux':
+        useIP = getIPv4Linux()
     else:
         print("can only be 'ipv4' or 'ipv6'")
     if not useIP:

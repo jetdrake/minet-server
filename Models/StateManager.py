@@ -3,7 +3,7 @@ from collections import defaultdict
 import operator
 import numpy as np
 
-class StateManager:
+class StateManager():
     # Handles all state related methods for the particle filter
     Mapper = None
     Map = None
@@ -20,13 +20,15 @@ class StateManager:
     #used to setup the landmarks for the size of the image
     scale = None
 
-    def __init__(self, link='line.json', scale=48, n=100):
-        self.Mapper = mapper.mapper(link)
-        self.Map = self.Mapper.getMap()
-        self.States = self.Mapper.getObservedStates()
-        self.scale = scale
-        self.createLandmarks()
-        self.initStates(n)
+    def __init__(self, link='', scale=48, n=100, use=True):
+        
+        if use is True:
+            self.Mapper = mapper.mapper(link)
+            self.Map = self.Mapper.getMap()
+            self.States = self.Mapper.getObservedStates()
+            self.scale = scale
+            self.createLandmarks()
+            self.initStates(n)
 
     def getStatesFromLandmark(self, landmark):
         # gets the unscaled state

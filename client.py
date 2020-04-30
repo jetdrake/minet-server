@@ -1,41 +1,28 @@
 import paho.mqtt.client as mqtt
-import json
-from Helpers import ip
+import json, sys
+from Helpers import ip, testlogger
 from Models import MapFilter
 import numpy as np
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import db
 
-
-'''
-rr = classifier.classifier()
-    def on_message(self, mqttc, obj, msg):
-        try:
-            msg = msg.payload.decode('UTF-8')
-            point = json.loads(msg)
-            #print(point)
-            print(rr.predictRawPoint(point))
-        except Exception as e:
-            print(e)
-        #print(msg.topic+" "+str(msg.qos)+" "+str(msg.payload))
-'''
-'''
-    def on_publish(self, mqttc, obj, mid):
-        print("mid: "+str(mid))
-
-    def on_subscribe(self, mqttc, obj, mid, granted_qos):
-        print("Subscribed: "+str(mid)+" "+str(granted_qos))
-
-    def on_log(self, mqttc, obj, level, string):
-        print(string)
-'''
+cred = credentials.Certificate("firebase/serviceAccountKey.json")
+# Initialize the app with a service account, granting admin privileges
+firebase_admin.initialize_app(cred, {
+    'databaseURL': 'https://magneticlocalization.firebaseio.com/'
+}, name="client")
 
 # takes a mqtt client and a particle filter and attempts localization.
 class Localize(mqtt.Client):
-    pf = MapFilter.MapFilter()
+    def __init__ (self, useMap):
+        super().__init__()
+        self.pf = MapFilter.MapFilter(useMap)
+        self.tl = testlogger.logger("exp1")
 
     def on_connect(self, mqttc, obj, flags, rc):
         print("rc: "+str(rc))
         
-
     def on_message(self, mqttc, obj, msg):
         try:
             print(msg.topic, str(msg.qos), str(msg.payload))
@@ -49,10 +36,12 @@ class Localize(mqtt.Client):
                     self.pf.update(np.array(realdata, dtype=float), pose)
                     state = self.pf.getMostPopularState()
                     print(state)
+                    self.tl.append(str(state[0]))
                     self.publish("result", str(state[0]))
             elif msg.topic == "connect":
                 mp = self.pf.getMapForPublish()
                 mp = json.dumps(mp)
+                self.tl.append("connected")
                 self.publish("map", str(mp))
                 print(mp)
         except Exception as e:
@@ -61,9 +50,12 @@ class Localize(mqtt.Client):
 
     def on_publish(self, mqttc, obj, mid):
         print("mid: "+str(mid))
+        self.tl.append(str(mid))
 
     def run(self):
-        ipaddr = ip.getIPv4Linux()
+        ref = db.reference('/')
+        data = ref.get("ip", None)
+        ipaddr = data[0]['ip']
         # rr.getAccuracy()
         self.connect(ipaddr, 1883, 60)
         self.subscribe("realtime", 0)
@@ -75,11 +67,13 @@ class Localize(mqtt.Client):
         return rc
 
 
-# If you want to use a specific client id, use
-# mqttc = MyMQTTClass("client-id")
-# but note that the client id must be unique on the broker. Leaving the client
-# id parameter empty will generate a random id for you.
-mqttc = Localize()
-rc = mqttc.run()
+if __name__ == '__main__':
+    useMap = "project"
+    for i, arg in enumerate(sys.argv):
+        if i == 1:
+            useMap = arg
+            
+    mqttc = Localize(useMap=useMap)
+    rc = mqttc.run()
 
-print("rc: "+str(rc))
+    print("rc: "+str(rc))
