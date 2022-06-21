@@ -15,7 +15,7 @@ mkl-random==1.1.0
 mkl-service==2.3.0
 mpmath==1.1.0
 networkx==2.4
-numpy==1.18.1
+numpy==1.22.0
 paho-mqtt==1.5.0
 pfilter==0.2.2
 Pillow==7.0.0
